@@ -3,10 +3,11 @@ import jwt from "jsonwebtoken";
 import { adminAuth } from "../middleware/adminAuth.js";
 
 const router = Router();
+const isProductionLike = process.env.NODE_ENV === "production" || process.env.RENDER === "true" || process.env.VERCEL === "1";
 const cookieOptions = () => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: isProductionLike,
+  sameSite: isProductionLike ? "none" : "lax",
   maxAge: 8 * 60 * 60 * 1000,
   path: "/"
 });
@@ -27,8 +28,8 @@ router.post("/login", (req, res) => {
 router.post("/logout", (_req, res) => {
   res.clearCookie("adminToken", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: isProductionLike,
+    sameSite: isProductionLike ? "none" : "lax",
     path: "/"
   });
   res.json({ message: "Logged out." });
