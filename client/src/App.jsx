@@ -617,11 +617,16 @@ export default function App() {
                                 items: cart.map((item) => ({ foodId: item._id, quantity: item.quantity })),
                                       });
                                             setCart([]);
-                                                  return response.data;
-                                                      } finally {
-                                                            setBusy(false);
-                                                                }
-                                                                  };
+                                                    try {
+                                                              await reloadOrders();
+                                                                  } catch {
+                                                                        // Ignore refresh errors when an admin session is not active.
+                                                                            }
+                                                                                return response.data;
+                                                                                    } finally {
+                                                                                          setBusy(false);
+                                                                                              }
+                                                                                                };
                                                                   
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
   
