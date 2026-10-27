@@ -197,28 +197,49 @@ function CartPage({ cart, changeQty, remove, placeOrder, busy }) {
                                                                                                           );
                                                                                                           }
                                                                                                           
-function AdminPage({ foods, reloadFoods, orders, setOrders }) {
+function AdminPage({ foods, reloadFoods, reloadOrders, orders, setOrders }) {
   const [loggedIn, setLoggedIn] = useState(false);
-    const [checking, setChecking] = useState(true);
-      const [tab, setTab] = useState("foods");
-        const [login, setLogin] = useState({ email: "admin@example.com", password: "" });
-          const [form, setForm] = useState({ name: "", description: "", category: "Indian", price: "", image: "", available: true });
-            const [editing, setEditing] = useState(null);
-              const [error, setError] = useState("");
-                const [notice, setNotice] = useState("");
-                  const [busy, setBusy] = useState(false);
-                    const [query, setQuery] = useState("");
-                    
+  const [checking, setChecking] = useState(true);
+  const [tab, setTab] = useState("foods");
+  const [login, setLogin] = useState({ email: "admin@example.com", password: "" });
+  const [form, setForm] = useState({ name: "", description: "", category: "Indian", price: "", image: "", available: true });
+  const [editing, setEditing] = useState(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState("");
+
   useEffect(() => {
-      api
-            .get("/auth/me")
-                  .then(() => setLoggedIn(true))
-                        .catch(() => {})
-                              .finally(() => setChecking(false));
-                                }, []);
-                                
+    api
+      .get("/auth/me")
+      .then(() => setLoggedIn(true))
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, []);
+
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    const loadOrders = async () => {
+      if (reloadOrders) {
+        await reloadOrders();
+      } else {
+        const response = await api.get("/orders");
+        setOrders(response.data);
+      }
+    };
+
+    loadOrders();
+    const timer = setInterval(loadOrders, 5000);
+    return () => clearInterval(timer);
+  }, [loggedIn, reloadOrders, setOrders]);
+
   const refresh = async () => {
-      await reloadFoods();
+    await reloadFoods();
+    if (reloadOrders) {
+      await reloadOrders();
+      return;
+    }
           const response = await api.get("/orders");
               setOrders(response.data);
                 };
@@ -542,11 +563,11 @@ export default function App() {
           setFoods(response.data);
             };
             
-  useEffect(() => {
-      reloadFoods()
-            .catch((e) => setError(e.response?.data?.message || "Could not load food menu."))
-                  .finally(() => setLoading(false));
-                    }, []);
+  const reloadOrders = async () => {
+    const response = await api.get("/orders");
+    setOrders(response.data);
+  };
+
                     
   const add = (food) => {
       setCart((previous) => {
@@ -595,7 +616,10 @@ export default function App() {
       <Routes>
               <Route path="/" element={<MenuPage foods={foods} add={add} loading={loading} error={error} />} />
                       <Route path="/cart" element={<CartPage cart={cart} changeQty={changeQty} remove={remove} placeOrder={placeOrder} busy={busy} />} />
-                              <Route path="/admin" element={<AdminPage foods={foods} reloadFoods={reloadFoods} orders={orders} setOrders={setOrders} />} />
+                              <Route
+          path="/admin"
+          element={<AdminPage foods={foods} reloadFoods={reloadFoods} reloadOrders={reloadOrders} orders={orders} setOrders={setOrders} />}
+        />
                                       <Route path="*" element={<main className="page"><div className="panel"><h2>Page not found</h2><Link to="/" className="button primary">Back to menu</Link></div></main>} />
                                             </Routes>
                                                 </div>
