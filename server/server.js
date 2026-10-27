@@ -27,12 +27,23 @@ const defaultFoods = [
 
 const app = express();
 app.set("trust proxy", 1);
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
-  .split(",").map((origin) => origin.trim()).filter(Boolean);
+
+const normalizeOrigin = (value) => String(value || "").trim().replace(/\/+$/, "");
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
+  "http://localhost:5173"
+].flatMap((value) => String(value || "").split(",")).map(normalizeOrigin).filter(Boolean);
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin) return callback(null, true);
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
+    if (process.env.NODE_ENV === "production" && /^https:\/\/.*\.vercel\.app$/i.test(normalizedOrigin)) {
+      return callback(null, true);
+    }
     return callback(new Error("Origin is not allowed by CORS"));
   },
   credentials: true
