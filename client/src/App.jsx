@@ -559,16 +559,32 @@ export default function App() {
             const [busy, setBusy] = useState(false);
             
   const reloadFoods = async () => {
+    try {
       const response = await api.get("/foods");
-          setFoods(response.data);
-            };
-            
-  const reloadOrders = async () => {
-    const response = await api.get("/orders");
-    setOrders(response.data);
+      setFoods(response.data || []);
+      setError("");
+    } catch (err) {
+      setFoods([]);
+      setError(err.response?.data?.message || "Could not load food menu.");
+    }
   };
 
-                    
+  const reloadOrders = async () => {
+    try {
+      const response = await api.get("/orders");
+      setOrders(response.data || []);
+    } catch (err) {
+      setOrders([]);
+      if (err.response?.status !== 401 && err.response?.status !== 403) {
+        setError(err.response?.data?.message || "Could not load orders.");
+      }
+    }
+  };
+
+  useEffect(() => {
+    reloadFoods().finally(() => setLoading(false));
+  }, []);
+
   const add = (food) => {
       setCart((previous) => {
             const found = previous.find((item) => item._id === food._id);
